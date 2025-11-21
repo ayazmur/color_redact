@@ -15,8 +15,10 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor
 
+from ui.ui_shape_editor import ShapeEditorUI
 
-class RedShapeEditor(QMainWindow):
+
+class ShapeEditor(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Редактор красных фигур")
@@ -61,31 +63,39 @@ class RedShapeEditor(QMainWindow):
         self.history_index = -1  # Текущая позиция в истории
         self.max_history_size = 50  # Максимальный размер истории
         self.adding_to_history = False  # Флаг для предотвращения рекурсии
-        self.setup_ui()
 
-    def setup_ui(self):
-        """Настройка интерфейса"""
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        # Инициализация UI
+        self.ui = ShapeEditorUI()
+        self.setCentralWidget(self.ui)
+        self.setup_ui_connections()
 
-        # Главный layout
-        main_layout = QHBoxLayout(central_widget)
+    def setup_ui_connections(self):
+        """Настройка соединений сигналов и слотов"""
+        # Кнопки цветов
+        self.ui.btn_choose_target.clicked.connect(self.choose_target_color)
+        self.ui.btn_choose_replacement.clicked.connect(self.choose_replacement_color)
 
-        # Левая панель - инструменты
-        left_panel = self.create_left_panel()
-        main_layout.addWidget(left_panel, 1)
+        # Режимы выделения
+        self.ui.mode_group.buttonClicked.connect(self.change_mode)
+        self.ui.mask_btn_group.buttonClicked.connect(self.change_mask_mode)
 
-        # Правая панель - изображение
-        right_panel = self.create_right_panel()
-        main_layout.addWidget(right_panel, 3)
+        # Автопредпросмотр
+        self.ui.auto_preview_check.toggled.connect(self.toggle_auto_preview)
 
-        # Нижняя панель - кнопки управления
-        bottom_panel = self.create_bottom_panel()
-        main_layout.addLayout(bottom_panel)
+        # Кнопки управления
+        self.ui.btn_undo.clicked.connect(self.undo_from_history)
+        self.ui.btn_preview.clicked.connect(self.toggle_preview)
+        self.ui.btn_next.clicked.connect(self.process_or_skip)
+        self.ui.btn_finish.clicked.connect(self.finish_processing)
+
+        # Обработка событий мыши на изображении
+        self.ui.image_label.mousePressEvent = self.on_mouse_press
+        self.ui.image_label.mouseMoveEvent = self.on_mouse_move
+        self.ui.image_label.mouseReleaseEvent = self.on_mouse_release
 
         # Устанавливаем фокус политику для обработки горячих клавиш
-        central_widget.setFocusPolicy(Qt.StrongFocus)
-        central_widget.setFocus()
+        self.ui.setFocusPolicy(Qt.StrongFocus)
+        self.ui.setFocus()
 
     def keyPressEvent(self, event):
         """Обработка нажатий клавиш"""
@@ -205,8 +215,8 @@ class RedShapeEditor(QMainWindow):
                 self.show_auto_preview_stats(red_count)
             else:
                 if hasattr(self, 'current_image') and self.current_image is not None:
-                    self.red_pixels_label.setText(f"Красных пикселей: {self.count_red_pixels(self.current_image)}")
-                    self.red_pixels_label.setStyleSheet("")
+                    self.ui.red_pixels_label.setText(f"Красных пикселей: {self.count_red_pixels(self.current_image)}")
+                    self.ui.red_pixels_label.setStyleSheet("")
         else:
             print("Нет действий для отмены")
 
@@ -274,185 +284,11 @@ class RedShapeEditor(QMainWindow):
                     # Если нет регионов, показываем оригинал
                     self.display_image()
                     if hasattr(self, 'current_image') and self.current_image is not None:
-                        self.red_pixels_label.setText(f"Красных пикселей: {self.count_red_pixels(self.current_image)}")
-                        self.red_pixels_label.setStyleSheet("")
+                        self.ui.red_pixels_label.setText(
+                            f"Красных пикселей: {self.count_red_pixels(self.current_image)}")
+                        self.ui.red_pixels_label.setStyleSheet("")
             finally:
                 self.adding_to_history = False
-
-    def create_left_panel(self):
-        """Создание левой панели с инструментами"""
-        panel = QGroupBox("Инструменты")
-        panel.setMaximumWidth(300)
-        layout = QVBoxLayout(panel)
-
-        # Информация о цветах
-        color_group = QGroupBox("Цвета")
-        color_layout = QVBoxLayout(color_group)
-
-        self.color_info = QLabel(f"Замена: RGB{self.target_color} → RGB{self.replacement_color}")
-        self.color_info.setWordWrap(True)
-        color_layout.addWidget(self.color_info)
-
-        btn_choose_target = QPushButton("Выбрать целевой цвет")
-        btn_choose_target.clicked.connect(self.choose_target_color)
-        color_layout.addWidget(btn_choose_target)
-
-        btn_choose_replacement = QPushButton("Выбрать цвет замены")
-        btn_choose_replacement.clicked.connect(self.choose_replacement_color)
-        color_layout.addWidget(btn_choose_replacement)
-
-        layout.addWidget(color_group)
-
-        # Режимы выделения
-        mode_group = QGroupBox("Режим выделения")
-        mode_layout = QVBoxLayout(mode_group)
-
-        self.mode_group = QButtonGroup()
-
-        btn_rect = QRadioButton("Прямоугольник")
-        btn_rect.setChecked(True)
-        self.mode_group.addButton(btn_rect, 1)
-        mode_layout.addWidget(btn_rect)
-
-        btn_ellipse = QRadioButton("Эллипс")
-        self.mode_group.addButton(btn_ellipse, 2)
-        mode_layout.addWidget(btn_ellipse)
-
-        btn_lasso = QRadioButton("Лассо")
-        self.mode_group.addButton(btn_lasso, 3)
-        mode_layout.addWidget(btn_lasso)
-
-        btn_mask = QRadioButton("Маска")
-        self.mode_group.addButton(btn_mask, 4)
-        mode_layout.addWidget(btn_mask)
-
-        self.mode_group.buttonClicked.connect(self.change_mode)
-        layout.addWidget(mode_group)
-
-        # Режим маски
-        self.mask_mode_group = QGroupBox("Режим маски")
-        self.mask_mode_layout = QVBoxLayout(self.mask_mode_group)
-
-        self.mask_btn_group = QButtonGroup()
-
-        btn_draw = QRadioButton("Рисовать область")
-        btn_draw.setChecked(True)
-        self.mask_btn_group.addButton(btn_draw, 1)
-        self.mask_mode_layout.addWidget(btn_draw)
-
-        btn_erase = QRadioButton("Создать дырку")
-        self.mask_btn_group.addButton(btn_erase, 2)
-        self.mask_mode_layout.addWidget(btn_erase)
-
-        self.mask_btn_group.buttonClicked.connect(self.change_mask_mode)
-        layout.addWidget(self.mask_mode_group)
-        self.mask_mode_group.setVisible(False)
-
-        # Информация о прогрессе
-        progress_group = QGroupBox("Прогресс")
-        progress_layout = QVBoxLayout(progress_group)
-
-        self.progress_label = QLabel("Ожидание загрузки...")
-        progress_layout.addWidget(self.progress_label)
-
-        self.red_pixels_label = QLabel("")
-        progress_layout.addWidget(self.red_pixels_label)
-
-        self.progress_bar = QProgressBar()
-        progress_layout.addWidget(self.progress_bar)
-
-        layout.addWidget(progress_group)
-
-        preview_group = QGroupBox("Автопредпросмотр")
-        preview_layout = QVBoxLayout(preview_group)
-
-        self.auto_preview_check = QRadioButton("Включить автопредпросмотр")
-        self.auto_preview_check.setChecked(True)
-        self.auto_preview_check.toggled.connect(self.toggle_auto_preview)
-        preview_layout.addWidget(self.auto_preview_check)
-
-        preview_info = QLabel(
-            "• Цвет меняется сразу при выделении\n• Зеленый - будет заменен\n• Желтый - контур выделения")
-        preview_info.setStyleSheet("color: #666; font-size: 11px;")
-        preview_info.setWordWrap(True)
-        preview_layout.addWidget(preview_info)
-
-        layout.addWidget(preview_group)
-
-        # Инструкция
-        instruction_group = QGroupBox("Инструкция")
-        instruction_layout = QVBoxLayout(instruction_group)
-
-        instructions = [
-            "• Выделите области с красными фигурами",
-            "• Можно выделять ЗА ПРЕДЕЛАМИ изображения",
-            "• Полезно для красных элементов у границ",
-            "• Цвет автоматически меняется при выделении",
-            "• ЗЕЛЕНАЯ подсветка - пиксели, которые будут заменены",
-            "• ЖЕЛТЫЙ контур - ваше выделение",
-            "• 'Отменить' - удаляет последнее выделение",
-            "• Ctrl+Z - отмена, Ctrl+Shift+Z - повтор",
-            "• ПРОБЕЛ - перейти к следующему изображению",
-            "• ALT - вернуться к предыдущему изображению",
-            "• Если есть выделения - обрабатывает, если нет - пропускает",
-            "• 'Завершить' - закончить обработку и сохранить документ"
-        ]
-
-        for instruction in instructions:
-            label = QLabel(instruction)
-            label.setWordWrap(True)
-            instruction_layout.addWidget(label)
-
-        layout.addWidget(instruction_group)
-        layout.addStretch()
-
-        return panel
-
-    def create_right_panel(self):
-        """Создание правой панели с изображением"""
-        panel = QGroupBox("Изображение")
-        layout = QVBoxLayout(panel)
-
-        # Метка для изображения
-        self.image_label = QLabel()
-        self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setMinimumSize(800, 600)
-        self.image_label.setStyleSheet("border: 1px solid gray; background-color: white;")
-        self.image_label.mousePressEvent = self.on_mouse_press
-        self.image_label.mouseMoveEvent = self.on_mouse_move
-        self.image_label.mouseReleaseEvent = self.on_mouse_release
-
-        layout.addWidget(self.image_label)
-
-        return panel
-
-    def create_bottom_panel(self):
-        """Создание нижней панели с кнопками"""
-        layout = QHBoxLayout()
-
-        self.btn_undo = QPushButton("↶ Отменить")
-        self.btn_undo.clicked.connect(self.undo_from_history)
-        self.btn_undo.setStyleSheet("QPushButton { background-color: #ff6b6b; color: white; font-weight: bold; }")
-        layout.addWidget(self.btn_undo)
-
-        self.btn_preview = QPushButton("👁 Предпросмотр")
-        self.btn_preview.clicked.connect(self.toggle_preview)
-        self.btn_preview.setStyleSheet("QPushButton { background-color: #a9e34b; color: black; font-weight: bold; }")
-        layout.addWidget(self.btn_preview)
-
-        # Объединенная кнопка "Далее" вместо "Готово" и "Пропустить"
-        self.btn_next = QPushButton("⏭ Далее (Пробел)")
-        self.btn_next.clicked.connect(self.process_or_skip)
-        self.btn_next.setStyleSheet(
-            "QPushButton { background-color: #51cf66; color: white; font-weight: bold; font-size: 14px; }")
-        layout.addWidget(self.btn_next)
-
-        self.btn_finish = QPushButton("🏁 Завершить")
-        self.btn_finish.clicked.connect(self.finish_processing)
-        self.btn_finish.setStyleSheet("QPushButton { background-color: #339af0; color: white; font-weight: bold; }")
-        layout.addWidget(self.btn_finish)
-
-        return layout
 
     def toggle_auto_preview(self, enabled):
         """Включение/выключение автопредпросмотра"""
@@ -469,8 +305,8 @@ class RedShapeEditor(QMainWindow):
         if not self.preview_mode:
             # Включаем предпросмотр
             self.preview_mode = True
-            self.btn_preview.setText("✏ Редактировать")
-            self.btn_preview.setStyleSheet(
+            self.ui.btn_preview.setText("✏ Редактировать")
+            self.ui.btn_preview.setStyleSheet(
                 "QPushButton { background-color: #ffa94d; color: black; font-weight: bold; }")
 
             # Создаем предпросмотр
@@ -478,8 +314,8 @@ class RedShapeEditor(QMainWindow):
         else:
             # Выключаем предпросмотр
             self.preview_mode = False
-            self.btn_preview.setText("👁 Предпросмотр")
-            self.btn_preview.setStyleSheet(
+            self.ui.btn_preview.setText("👁 Предпросмотр")
+            self.ui.btn_preview.setStyleSheet(
                 "QPushButton { background-color: #a9e34b; color: black; font-weight: bold; }")
 
             # Возвращаем оригинальное изображение
@@ -515,24 +351,24 @@ class RedShapeEditor(QMainWindow):
         pixmap = QPixmap.fromImage(q_img)
 
         # Масштабируем для отображения
-        scaled_pixmap = pixmap.scaled(self.image_label.width(), self.image_label.height(),
+        scaled_pixmap = pixmap.scaled(self.ui.image_label.width(), self.ui.image_label.height(),
                                       Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
-        self.image_label.setPixmap(scaled_pixmap)
+        self.ui.image_label.setPixmap(scaled_pixmap)
 
     def show_preview_stats(self, red_count):
         """Показать статистику предпросмотра"""
         # Временно меняем текст прогресса для показа статистики
-        original_text = self.progress_label.text()
-        self.progress_label.setText(
+        original_text = self.ui.progress_label.text()
+        self.ui.progress_label.setText(
             f"{original_text} | Предпросмотр: заменено {red_count} пикселей"
         )
 
         # Меняем цвет метки красных пикселей
-        self.red_pixels_label.setText(
+        self.ui.red_pixels_label.setText(
             f"🔴 Заменено красных пикселей: {red_count}"
         )
-        self.red_pixels_label.setStyleSheet("color: #51cf66; font-weight: bold;")
+        self.ui.red_pixels_label.setStyleSheet("color: #51cf66; font-weight: bold;")
 
     def choose_target_color(self):
         """Выбор целевого цвета"""
@@ -550,22 +386,22 @@ class RedShapeEditor(QMainWindow):
 
     def update_color_info(self):
         """Обновление информации о цветах"""
-        self.color_info.setText(f"Замена: RGB{self.target_color} → RGB{self.replacement_color}")
+        self.ui.color_info.setText(f"Замена: RGB{self.target_color} → RGB{self.replacement_color}")
 
     def change_mode(self, button):
         """Смена режима выделения"""
         if button.text() == "Прямоугольник":
             self.mode = "rectangle"
-            self.mask_mode_group.setVisible(False)
+            self.ui.mask_mode_group.setVisible(False)
         elif button.text() == "Эллипс":
             self.mode = "ellipse"
-            self.mask_mode_group.setVisible(False)
+            self.ui.mask_mode_group.setVisible(False)
         elif button.text() == "Лассо":
             self.mode = "lasso"
-            self.mask_mode_group.setVisible(False)
+            self.ui.mask_mode_group.setVisible(False)
         else:  # Маска
             self.mode = "mask"
-            self.mask_mode_group.setVisible(True)
+            self.ui.mask_mode_group.setVisible(True)
 
     def change_mask_mode(self, button):
         """Смена режима маски"""
@@ -659,9 +495,9 @@ class RedShapeEditor(QMainWindow):
         self.current_points = []
         self.preview_image = None
         self.preview_mode = False
-        if hasattr(self, 'btn_preview'):
-            self.btn_preview.setText("👁 Предпросмотр")
-            self.btn_preview.setStyleSheet(
+        if hasattr(self, 'ui'):
+            self.ui.btn_preview.setText("👁 Предпросмотр")
+            self.ui.btn_preview.setStyleSheet(
                 "QPushButton { background-color: #a9e34b; color: black; font-weight: bold; }")
 
         # Сбрасываем историю для нового изображения
@@ -710,14 +546,14 @@ class RedShapeEditor(QMainWindow):
 
         # Масштабируем для отображения с УВЕЛИЧЕННЫМ РАЗМЕРОМ
         scaled_pixmap = pixmap.scaled(
-            self.image_label.width() - 20,  # Увеличиваем рабочую область
-            self.image_label.height() - 20,
+            self.ui.image_label.width() - 20,  # Увеличиваем рабочую область
+            self.ui.image_label.height() - 20,
             Qt.KeepAspectRatio,
             Qt.SmoothTransformation
         )
 
         self.current_pixmap = scaled_pixmap
-        self.image_label.setPixmap(scaled_pixmap)
+        self.ui.image_label.setPixmap(scaled_pixmap)
 
     def update_progress(self):
         """Обновление прогресса с информацией о порядке в документе"""
@@ -734,17 +570,17 @@ class RedShapeEditor(QMainWindow):
         image_idx = self.filtered_indices[self.current_index]
         total_images = len(self.image_parts)
 
-        self.progress_label.setText(
+        self.ui.progress_label.setText(
             f"Изображение {self.current_index + 1}/{total_red} "
             f"(в документе: №{image_idx + 1} из {total_images})"
         )
 
         # Сбрасываем стиль метки красных пикселей
-        self.red_pixels_label.setText(f"Красных пикселей: {current_red_pixels}")
-        self.red_pixels_label.setStyleSheet("")
+        self.ui.red_pixels_label.setText(f"Красных пикселей: {current_red_pixels}")
+        self.ui.red_pixels_label.setStyleSheet("")
 
-        self.progress_bar.setMaximum(total_red)
-        self.progress_bar.setValue(self.current_index + 1)
+        self.ui.progress_bar.setMaximum(total_red)
+        self.ui.progress_bar.setValue(self.current_index + 1)
 
     def on_mouse_press(self, event):
         """Нажатие мыши на изображении"""
@@ -753,7 +589,7 @@ class RedShapeEditor(QMainWindow):
 
         # Получаем координаты относительно изображения
         pixmap_size = self.current_pixmap.size()
-        label_size = self.image_label.size()
+        label_size = self.ui.image_label.size()
 
         x_offset = (label_size.width() - pixmap_size.width()) // 2
         y_offset = (label_size.height() - pixmap_size.height()) // 2
@@ -784,7 +620,7 @@ class RedShapeEditor(QMainWindow):
             return
 
         pixmap_size = self.current_pixmap.size()
-        label_size = self.image_label.size()
+        label_size = self.ui.image_label.size()
 
         x_offset = (label_size.width() - pixmap_size.width()) // 2
         y_offset = (label_size.height() - pixmap_size.height()) // 2
@@ -812,7 +648,7 @@ class RedShapeEditor(QMainWindow):
         self.drawing = False
 
         pixmap_size = self.current_pixmap.size()
-        label_size = self.image_label.size()
+        label_size = self.ui.image_label.size()
 
         x_offset = (label_size.width() - pixmap_size.width()) // 2
         y_offset = (label_size.height() - pixmap_size.height()) // 2
@@ -902,13 +738,13 @@ class RedShapeEditor(QMainWindow):
 
             # Масштабируем для отображения (С УВЕЛИЧЕННЫМ РАЗМЕРОМ)
             scaled_pixmap = pixmap.scaled(
-                self.image_label.width() - 20,
-                self.image_label.height() - 20,
+                self.ui.image_label.width() - 20,
+                self.ui.image_label.height() - 20,
                 Qt.KeepAspectRatio,
                 Qt.SmoothTransformation
             )
 
-            self.image_label.setPixmap(scaled_pixmap)
+            self.ui.image_label.setPixmap(scaled_pixmap)
 
         except Exception as e:
             print(f"Ошибка в display_auto_preview: {e}")
@@ -929,23 +765,23 @@ class RedShapeEditor(QMainWindow):
 
             # Масштабируем для отображения
             scaled_pixmap = pixmap.scaled(
-                self.image_label.width() - 20,
-                self.image_label.height() - 20,
+                self.ui.image_label.width() - 20,
+                self.ui.image_label.height() - 20,
                 Qt.KeepAspectRatio,
                 Qt.SmoothTransformation
             )
 
-            self.image_label.setPixmap(scaled_pixmap)
+            self.ui.image_label.setPixmap(scaled_pixmap)
         except Exception as e:
             print(f"Ошибка в резервном отображении: {e}")
 
     def show_auto_preview_stats(self, red_count):
         """Показать статистику автопредпросмотра"""
-        if hasattr(self, 'red_pixels_label'):
-            self.red_pixels_label.setText(
+        if hasattr(self, 'ui'):
+            self.ui.red_pixels_label.setText(
                 f"🟢 Будет заменено: {red_count} пикселей"
             )
-            self.red_pixels_label.setStyleSheet(
+            self.ui.red_pixels_label.setStyleSheet(
                 "color: #51cf66; font-weight: bold; background-color: #f8f9fa; padding: 5px;")
 
     def draw_temp_shape(self):
@@ -964,7 +800,7 @@ class RedShapeEditor(QMainWindow):
                 painter.drawLine(int(x1), int(y1), int(x2), int(y2))
 
         painter.end()
-        self.image_label.setPixmap(pixmap)
+        self.ui.image_label.setPixmap(pixmap)
 
     def draw_temp_rectangle(self, x, y):
         """Рисование временного прямоугольника"""
@@ -989,7 +825,7 @@ class RedShapeEditor(QMainWindow):
                          int(draw_x2 - draw_x1), int(draw_y2 - draw_y1))
 
         painter.end()
-        self.image_label.setPixmap(pixmap)
+        self.ui.image_label.setPixmap(pixmap)
 
     def draw_temp_ellipse(self, x, y):
         """Рисование временного эллипса"""
@@ -1014,7 +850,7 @@ class RedShapeEditor(QMainWindow):
                             int(draw_x2 - draw_x1), int(draw_y2 - draw_y1))
 
         painter.end()
-        self.image_label.setPixmap(pixmap)
+        self.ui.image_label.setPixmap(pixmap)
 
     def finalize_rectangle(self, x, y):
         """Финализация прямоугольника"""
@@ -1164,12 +1000,12 @@ class RedShapeEditor(QMainWindow):
 
         # Масштабируем с УВЕЛИЧЕННЫМ РАЗМЕРОМ
         scaled_pixmap = pixmap.scaled(
-            self.image_label.width() - 20,
-            self.image_label.height() - 20,
+            self.ui.image_label.width() - 20,
+            self.ui.image_label.height() - 20,
             Qt.KeepAspectRatio,
             Qt.SmoothTransformation
         )
-        self.image_label.setPixmap(scaled_pixmap)
+        self.ui.image_label.setPixmap(scaled_pixmap)
 
     def process_current(self):
         """Обработка текущего изображения"""
@@ -1204,8 +1040,8 @@ class RedShapeEditor(QMainWindow):
 
             # Сбрасываем режим предпросмотра
             self.preview_mode = False
-            self.btn_preview.setText("👁 Предпросмотр")
-            self.btn_preview.setStyleSheet(
+            self.ui.btn_preview.setText("👁 Предпросмотр")
+            self.ui.btn_preview.setStyleSheet(
                 "QPushButton { background-color: #a9e34b; color: black; font-weight: bold; }")
 
             # Переходим к следующему
@@ -1533,7 +1369,7 @@ def main():
             QMessageBox.critical(None, "Ошибка", "Не найден файл test.docx!")
             return
 
-    editor = RedShapeEditor()
+    editor = ShapeEditor()
     if editor.load_word_document(docx_path):
         editor.show()
     else:
