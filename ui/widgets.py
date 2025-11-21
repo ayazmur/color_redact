@@ -1,19 +1,19 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QLabel, QGroupBox, QRadioButton, QButtonGroup,
-                             QProgressBar)
+                             QProgressBar, QListWidget, QListWidgetItem)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QColor
 
 
-class ShapeEditorUI(QWidget):
+class RedShapeEditorUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setup_ui()
 
     def setup_ui(self):
         """Настройка интерфейса"""
-        # Главный layout
         main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(5, 5, 5, 5)
 
         # Левая панель - инструменты
         left_panel = self.create_left_panel()
@@ -32,22 +32,47 @@ class ShapeEditorUI(QWidget):
         panel = QGroupBox("Инструменты")
         panel.setMaximumWidth(300)
         layout = QVBoxLayout(panel)
+        layout.setContentsMargins(5, 10, 5, 10)
+
+        # Кнопка открытия файла
+        self.btn_open_file = QPushButton("📁 Открыть Word документ")
+        self.btn_open_file.setStyleSheet(
+            "QPushButton { background-color: #4dabf7; color: white; font-weight: bold; padding: 8px; }")
+        layout.addWidget(self.btn_open_file)
+
+        # Информация о загруженном файле
+        self.file_info = QLabel("Файл не загружен")
+        self.file_info.setWordWrap(True)
+        self.file_info.setStyleSheet(
+            "color: #666; font-size: 11px; padding: 5px; background-color: #f8f9fa; border-radius: 3px;")
+        layout.addWidget(self.file_info)
+
+        layout.addSpacing(10)
 
         # Информация о цветах
         color_group = QGroupBox("Цвета")
         color_layout = QVBoxLayout(color_group)
 
-        self.color_info = QLabel(f"Замена: RGB(236, 19, 27) → RGB(0, 0, 255)")
+        self.color_info = QLabel("Замена: RGB(236, 19, 27) → RGB(0, 0, 255)")
         self.color_info.setWordWrap(True)
         color_layout.addWidget(self.color_info)
 
-        self.btn_choose_target = QPushButton("Выбрать целевой цвет")
+        self.btn_choose_target = QPushButton("Управление целевыми цветами")
         color_layout.addWidget(self.btn_choose_target)
 
         self.btn_choose_replacement = QPushButton("Выбрать цвет замены")
         color_layout.addWidget(self.btn_choose_replacement)
 
+        self.btn_manage_colors = QPushButton("Настройки цветов...")
+        color_layout.addWidget(self.btn_manage_colors)
+
         layout.addWidget(color_group)
+
+        # Список целевых цветов
+        self.color_list = QListWidget()
+        self.color_list.setMaximumHeight(100)
+        color_layout.addWidget(QLabel("Текущие целевые цвета:"))
+        color_layout.addWidget(self.color_list)
 
         # Режимы выделения
         mode_group = QGroupBox("Режим выделения")
@@ -107,6 +132,7 @@ class ShapeEditorUI(QWidget):
 
         layout.addWidget(progress_group)
 
+        # Автопредпросмотр
         preview_group = QGroupBox("Автопредпросмотр")
         preview_layout = QVBoxLayout(preview_group)
 
@@ -127,9 +153,9 @@ class ShapeEditorUI(QWidget):
         instruction_layout = QVBoxLayout(instruction_group)
 
         instructions = [
-            "• Выделите области с красными фигурами",
+            "• Выделите области с цветными фигурами",
             "• Можно выделять ЗА ПРЕДЕЛАМИ изображения",
-            "• Полезно для красных элементов у границ",
+            "• Полезно для цветных элементов у границ",
             "• Цвет автоматически меняется при выделении",
             "• ЗЕЛЕНАЯ подсветка - пиксели, которые будут заменены",
             "• ЖЕЛТЫЙ контур - ваше выделение",
@@ -170,7 +196,7 @@ class ShapeEditorUI(QWidget):
         """Создание нижней панели с кнопками"""
         layout = QHBoxLayout()
 
-        self.btn_undo = QPushButton("↶ Отменить")
+        self.btn_undo = QPushButton("↶ Отменить (Ctrl+Z)")
         self.btn_undo.setStyleSheet("QPushButton { background-color: #ff6b6b; color: white; font-weight: bold; }")
         layout.addWidget(self.btn_undo)
 
@@ -178,7 +204,6 @@ class ShapeEditorUI(QWidget):
         self.btn_preview.setStyleSheet("QPushButton { background-color: #a9e34b; color: black; font-weight: bold; }")
         layout.addWidget(self.btn_preview)
 
-        # Объединенная кнопка "Далее" вместо "Готово" и "Пропустить"
         self.btn_next = QPushButton("⏭ Далее (Пробел)")
         self.btn_next.setStyleSheet(
             "QPushButton { background-color: #51cf66; color: white; font-weight: bold; font-size: 14px; }")
@@ -189,3 +214,16 @@ class ShapeEditorUI(QWidget):
         layout.addWidget(self.btn_finish)
 
         return layout
+
+    def update_color_list(self, colors):
+        """Обновление списка цветов"""
+        self.color_list.clear()
+        for color in colors:
+            item = QListWidgetItem(f"RGB{color}")
+            # Устанавливаем цвет фона
+            item.setBackground(QColor(*color))
+            # Устанавливаем цвет текста в зависимости от яркости фона
+            brightness = color[0] * 0.299 + color[1] * 0.587 + color[2] * 0.114
+            text_color = "white" if brightness < 128 else "black"
+            item.setForeground(QColor(text_color))
+            self.color_list.addItem(item)
