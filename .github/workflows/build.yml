@@ -23,24 +23,34 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Cache pip packages
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~\AppData\Local\pip\Cache
-          ~\.cache\pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+    - name: Display directory structure
+      run: |
+        echo "Содержимое репозитория:"
+        dir
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install PyQt5 opencv-python python-docx Pillow lxml numpy pyinstaller
 
-    - name: Build EXE
+    - name: Build EXE with PyInstaller
       run: |
-        pyinstaller build.spec --clean --noconfirm
+        echo "Сборка EXE..."
+        pyinstaller --name=RedShapeEditor --windowed --onefile --clean --noconfirm ^
+          --add-data="core;core" ^
+          --add-data="ui;ui" ^
+          --add-data="utils;utils" ^
+          --hidden-import=docx.oxml ^
+          --hidden-import=docx.opc.constants ^
+          --hidden-import=docx.image ^
+          --hidden-import=docx.oxml.shape ^
+          --hidden-import=docx.oxml.ns ^
+          --hidden-import=docx.opc.phys_pkg ^
+          --hidden-import=PIL._imaging ^
+          --hidden-import=cv2 ^
+          --hidden-import=lxml.etree ^
+          --hidden-import=lxml._elementpath ^
+          main.py
 
     - name: Upload executable
       uses: actions/upload-artifact@v4
@@ -49,14 +59,3 @@ jobs:
         path: dist/RedShapeEditor.exe
         retention-days: 30
         compression-level: 9
-
-    - name: Create GitHub Release
-      if: github.event_name == 'release'
-      uses: softprops/action-gh-release@v1
-      with:
-        files: dist/RedShapeEditor.exe
-        body: |
-          Автоматическая сборка RedShapeEditor
-          
-          Собрано: ${{ github.event.release.published_at }}
-          Коммит: ${{ github.sha }}
