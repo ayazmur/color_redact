@@ -1,7 +1,8 @@
 @echo off
 chcp 65001
 echo Установка зависимостей...
-pip install PyQt5 opencv-python python-docx Pillow lxml numpy pyinstaller
+pip install -r requirements.txt
+pip install pyinstaller
 
 echo Очистка предыдущих сборок...
 if exist build rmdir /s /q build
@@ -14,5 +15,9 @@ echo.
 echo === СБОРКА ЗАВЕРШЕНА ===
 echo EXE файл: dist\RedShapeEditor.exe
 dir dist\RedShapeEditor.exe
+
+echo.
+echo Дополнительная оптимизация...
+python optimize.py
 
 pause

@@ -5,6 +5,10 @@ on:
     branches: [ main, master ]
   release:
     types: [ published ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.9'
 
 jobs:
   build:
@@ -12,12 +16,22 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Set up Python
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~\AppData\Local\pip\Cache
+          ~\.cache\pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
@@ -28,15 +42,21 @@ jobs:
       run: |
         pyinstaller build.spec --clean --noconfirm
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v3
+    - name: Upload executable
+      uses: actions/upload-artifact@v4
       with:
-        name: RedShapeEditor
+        name: RedShapeEditor-Windows
         path: dist/RedShapeEditor.exe
         retention-days: 30
+        compression-level: 9
 
-    - name: Create Release
+    - name: Create GitHub Release
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v1
       with:
         files: dist/RedShapeEditor.exe
+        body: |
+          Автоматическая сборка RedShapeEditor
+          
+          Собрано: ${{ github.event.release.published_at }}
+          Коммит: ${{ github.sha }}
