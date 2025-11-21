@@ -1,24 +1,29 @@
+# -*- coding: utf-8 -*-
 import os
 import subprocess
 import sys
 
 
 def main():
-    print("=== Сборка RedShapeEditor в GitHub Actions ===")
+    # Устанавливаем UTF-8 кодировку для вывода
+    if sys.stdout.encoding != 'utf-8':
+        sys.stdout.reconfigure(encoding='utf-8')
+
+    print("=== Building RedShapeEditor in GitHub Actions ===")
 
     # Показываем структуру директории
-    print("Текущая директория:", os.getcwd())
-    print("Содержимое директории:")
+    print("Current directory:", os.getcwd())
+    print("Directory contents:")
     for item in os.listdir('.'):
         if os.path.isdir(item):
-            print(f"  📁 {item}/")
+            print(f"  [DIR] {item}/")
             try:
                 for subitem in os.listdir(item):
-                    print(f"    📄 {subitem}")
+                    print(f"    [FILE] {subitem}")
             except:
                 pass
         else:
-            print(f"  📄 {item}")
+            print(f"  [FILE] {item}")
 
     # Команда PyInstaller для Windows
     cmd = [
@@ -47,40 +52,41 @@ def main():
         'main.py'
     ]
 
-    print("Выполняется сборка...")
-    print("Команда:", ' '.join(cmd))
+    print("Building...")
+    print("Command:", ' '.join(cmd))
 
     try:
+        # Запускаем с указанием кодировки
         result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8')
-        print("✓ Сборка успешно завершена!")
+        print("SUCCESS: Build completed!")
 
         # Проверяем созданный файл
         exe_path = "dist/RedShapeEditor.exe"
         if os.path.exists(exe_path):
             size = os.path.getsize(exe_path) / (1024 * 1024)
-            print(f"✓ EXE файл создан: {exe_path}")
-            print(f"✓ Размер: {size:.1f} MB")
+            print(f"SUCCESS: EXE file created: {exe_path}")
+            print(f"SUCCESS: Size: {size:.1f} MB")
 
             # Дополнительная оптимизация UPX
             try:
-                print("Оптимизация UPX...")
+                print("UPX optimization...")
                 subprocess.run(['upx', '--best', '--lzma', exe_path], check=True)
                 optimized_size = os.path.getsize(exe_path) / (1024 * 1024)
-                print(f"✓ Оптимизированный размер: {optimized_size:.1f} MB")
+                print(f"SUCCESS: Optimized size: {optimized_size:.1f} MB")
             except Exception as e:
-                print(f"⚠ UPX не доступен: {e}")
+                print(f"INFO: UPX not available: {e}")
 
         else:
-            print("✗ EXE файл не найден!")
+            print("ERROR: EXE file not found!")
             sys.exit(1)
 
     except subprocess.CalledProcessError as e:
-        print("✗ Ошибка сборки!")
+        print("ERROR: Build failed!")
         print("STDOUT:", e.stdout)
         print("STDERR:", e.stderr)
         sys.exit(1)
     except Exception as e:
-        print(f"✗ Неожиданная ошибка: {e}")
+        print(f"ERROR: Unexpected error: {e}")
         sys.exit(1)
 
 

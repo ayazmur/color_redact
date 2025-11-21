@@ -9,6 +9,7 @@ on:
 
 env:
   PYTHON_VERSION: '3.9'
+  PYTHONUTF8: '1'
 
 jobs:
   build:
