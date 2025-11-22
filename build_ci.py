@@ -5,27 +5,21 @@ import sys
 
 
 def main():
-    # Устанавливаем UTF-8 кодировку для вывода
+    # Устанавливаем UTF-8 кодировку
     if sys.stdout.encoding != 'utf-8':
-        sys.stdout.reconfigure(encoding='utf-8')
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except:
+            pass
 
-    print("=== Building RedShapeEditor in GitHub Actions ===")
+    print("=== Building Release Version ===")
 
-    # Показываем структуру директории
-    print("Current directory:", os.getcwd())
-    print("Directory contents:")
-    for item in os.listdir('.'):
-        if os.path.isdir(item):
-            print(f"  [DIR] {item}/")
-            try:
-                for subitem in os.listdir(item):
-                    print(f"    [FILE] {subitem}")
-            except:
-                pass
-        else:
-            print(f"  [FILE] {item}")
+    # Определяем что это релизная сборка
+    is_release = os.environ.get('GITHUB_REF', '') == 'refs/heads/release' or 'release' in os.environ.get(
+        'GITHUB_EVENT_NAME', '')
+    print(f"Release build: {is_release}")
 
-    # Команда PyInstaller для Windows
+    # Команда PyInstaller с оптимизацией для релиза
     cmd = [
         'pyinstaller',
         '--name=RedShapeEditor',
@@ -52,13 +46,11 @@ def main():
         'main.py'
     ]
 
-    print("Building...")
-    print("Command:", ' '.join(cmd))
+    print("Building release EXE...")
 
     try:
-        # Запускаем с указанием кодировки
         result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8')
-        print("SUCCESS: Build completed!")
+        print("SUCCESS: Release build completed!")
 
         # Проверяем созданный файл
         exe_path = "dist/RedShapeEditor.exe"
@@ -67,26 +59,23 @@ def main():
             print(f"SUCCESS: EXE file created: {exe_path}")
             print(f"SUCCESS: Size: {size:.1f} MB")
 
-            # Дополнительная оптимизация UPX
+            # Обязательная UPX оптимизация для релиза
             try:
-                print("UPX optimization...")
+                print("Applying UPX compression for release...")
                 subprocess.run(['upx', '--best', '--lzma', exe_path], check=True)
                 optimized_size = os.path.getsize(exe_path) / (1024 * 1024)
-                print(f"SUCCESS: Optimized size: {optimized_size:.1f} MB")
+                print(f"SUCCESS: Optimized release size: {optimized_size:.1f} MB")
             except Exception as e:
-                print(f"INFO: UPX not available: {e}")
+                print(f"WARNING: UPX not available: {e}")
 
         else:
             print("ERROR: EXE file not found!")
             sys.exit(1)
 
     except subprocess.CalledProcessError as e:
-        print("ERROR: Build failed!")
+        print("ERROR: Release build failed!")
         print("STDOUT:", e.stdout)
         print("STDERR:", e.stderr)
-        sys.exit(1)
-    except Exception as e:
-        print(f"ERROR: Unexpected error: {e}")
         sys.exit(1)
 
 
