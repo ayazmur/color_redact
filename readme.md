@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![GitHub Actions](https://img.shields.io/github/actions/workflow/status/YOUR_USERNAME/color_redact/release.yml?branch=release&label=Build)
+![GitHub Actions](https://img.shields.io/github/actions/workflow/status/ayazmur/color_redact/release.yml?branch=release&label=Build)
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D6)
 ![Python](https://img.shields.io/badge/Python-3.9+-3776AB)
 ![License](https://img.shields.io/badge/License-MIT-green)
@@ -40,7 +40,7 @@
 ### 📥 Автоматические сборки (рекомендуется)
 
 1. **Перейдите на страницу сборок:**
-   - Откройте [Actions](https://github.com/YOUR_USERNAME/color_redact/actions)
+   - Откройте [Actions](https://github.com/ayazmur/color_redact/actions)
    - Найдите workflow **"Build Release EXE"** с зелёной галочкой ✅
 
 2. **Скачайте программу:**
@@ -57,10 +57,10 @@
 
 ```
 📦 Последняя версия: 
-https://github.com/YOUR_USERNAME/color_redact/actions
+https://github.com/ayazmur/color_redact/actions
 
 🔍 Фильтр успешных сборок:
-https://github.com/YOUR_USERNAME/color_redact/actions?query=workflow%3A"Build+Release+EXE"+is%3Asuccess
+https://github.com/ayazmur/color_redact/actions?query=workflow%3A"Build+Release+EXE"+is%3Asuccess
 ```
 
 ## 🖼️ Демонстрация
@@ -209,7 +209,7 @@ https://github.com/YOUR_USERNAME/color_redact/actions?query=workflow%3A"Build+Re
 
 ```bash
 # Клонируйте репозиторий
-git clone https://github.com/YOUR_USERNAME/color_redact.git
+git clone https://github.com/ayazmur/color_redact.git
 cd color_redact
 
 # Запустите автоматическую сборку
@@ -355,8 +355,8 @@ pyinstaller --name=RedShapeEditor --windowed --onefile ^
 ### Получение технической поддержки
 
 1. **Проверьте существующие issues:**
-   - [Issues](https://github.com/YOUR_USERNAME/color_redact/issues)
-   - [Discussions](https://github.com/YOUR_USERNAME/color_redact/discussions)
+   - [Issues](https://github.com/ayazmur/color_redact/issues)
+   - [Discussions](https://github.com/ayazmur/color_redact/discussions)
 
 2. **Создайте новый issue:**
    - Чёткий заголовок
@@ -413,7 +413,7 @@ pyinstaller --name=RedShapeEditor --windowed --onefile ^
 ```
 MIT License
 
-Copyright (c) 2024 YOUR_NAME
+Copyright (c) 2024 Ayaz Mursalimov
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -450,8 +450,8 @@ SOFTWARE.
 - Пользователи за **обратную связь** и идеи для улучшений
 
 ### Контрибьюторы
-- [Ваше имя] - создатель и основной разработчик
-- [Список контрибьюторов](https://github.com/YOUR_USERNAME/color_redact/graphs/contributors)
+- [Ayaz Mursalimov](https://github.com/ayazmur) - создатель и основной разработчик
+- [Список контрибьюторов](https://github.com/ayazmur/color_redact/graphs/contributors)
 
 ---
 
@@ -461,10 +461,8 @@ SOFTWARE.
 
 *Это мотивирует нас продолжать разработку и улучшать программу*
 
-[🚀 Скачать последнюю версию](#-скачать-готовую-версию) • [🐛 Сообщить о ошибке](https://github.com/YOUR_USERNAME/color_redact/issues) • [💡 Предложить идею](https://github.com/YOUR_USERNAME/color_redact/discussions)
+[🚀 Скачать последнюю версию](https://github.com/ayazmur/color_redact/actions) • [🐛 Сообщить о ошибке](https://github.com/ayazmur/color_redact/issues) • [💡 Предложить идею](https://github.com/ayazmur/color_redact/discussions)
 
-*Последнее обновление: $(date)*
+*Последнее обновление: 2024*
 
 </div>
-
-**Не забудьте заменить `YOUR_USERNAME` и `YOUR_NAME` на ваши реальные данные!**
