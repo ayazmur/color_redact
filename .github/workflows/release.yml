@@ -1,0 +1,75 @@
+name: Release Build
+
+on:
+  push:
+    branches: [ release ]
+  pull_request:
+    branches: [ release ]
+    types: [ closed ]
+
+env:
+  PYTHON_VERSION: '3.9'
+  PYTHONUTF8: '1'
+
+jobs:
+  check-pr:
+    runs-on: ubuntu-latest
+    outputs:
+      should-build: ${{ steps.check.outputs.should-build }}
+      release-name: ${{ steps.check.outputs.release-name }}
+    steps:
+    - name: Check if should build
+      id: check
+      run: |
+        if [[ "${{ github.event_name }}" == "push" ]]; then
+          echo "should-build=true" >> $GITHUB_OUTPUT
+          echo "release-name=Release Build ${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "Build triggered by push to release branch"
+        elif [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.merged }}" == "true" ]]; then
+          echo "should-build=true" >> $GITHUB_OUTPUT
+          echo "release-name=PR Merge Build ${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "Build triggered by PR merge into release"
+        else
+          echo "should-build=false" >> $GITHUB_OUTPUT
+          echo "Build skipped - not a release event"
+        fi
+
+  build:
+    needs: check-pr
+    if: needs.check-pr.outputs.should-build == 'true'
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install PyQt5==5.15.10 opencv-python==4.8.1.78 python-docx==1.1.0 Pillow==10.0.1 lxml==4.9.3 numpy==1.24.3 pyinstaller==6.16.0
+
+    - name: Build EXE
+      run: |
+        python build_ci.py
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/RedShapeEditor.exe
+        tag_name: release-${{ github.sha }}
+        name: ${{ needs.check-pr.outputs.release-name }}
+        body: |
+          # Red Shape Editor
+          
+          Automated build from release branch.
+          
+          **Event:** ${{ github.event_name }}
+          **Commit:** ${{ github.sha }}
+          
+          ## Download
+          Click `RedShapeEditor.exe` to download.
