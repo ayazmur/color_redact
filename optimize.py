@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import subprocess
 import sys
@@ -19,7 +18,7 @@ def optimize_build():
 
     # Try to use UPX for compression
     try:
-        print("UPX compression...")
+        print("Applying UPX compression...")
         result = subprocess.run([
             'upx', '--best', '--lzma', exe_path
         ], capture_output=True, text=True, check=True)
