@@ -1,15 +1,20 @@
-name: Build Release EXE
+name: Create Release with EXE
 
 on:
   push:
     branches: [ release ]
+  release:
+    types: [ published ]
 
 env:
   PYTHON_VERSION: '3.9'
 
 jobs:
-  build:
+  build-and-release:
     runs-on: windows-latest
+
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout code
@@ -29,9 +34,35 @@ jobs:
       run: |
         python build_ci.py
 
-    - name: Upload EXE as download artifact
-      uses: actions/upload-artifact@v4
+    - name: Create Release and Upload EXE
+      uses: softprops/action-gh-release@v1
       with:
-        name: RedShapeEditor-Windows
-        path: dist/RedShapeEditor.exe
-        retention-days: 90
+        files: |
+          dist/RedShapeEditor.exe
+        tag_name: ${{ github.event.release.tag_name || 'v1.0.0' }}
+        name: ${{ github.event.release.name || 'Red Shape Editor' }}
+        body: |
+          # Red Shape Editor
+          
+          ## Automated Release
+          
+          This release contains the ready-to-use Windows executable.
+          
+          ### Download
+          Click on **RedShapeEditor.exe** above to download the application.
+          
+          ### How to Use
+          1. Download and run `RedShapeEditor.exe`
+          2. Click "Open Word Document" to select your .docx file
+          3. Select areas with colored shapes
+          4. Preview changes and save the result
+          
+          ###  Windows Security Notice
+          Windows may show a security warning since this is an unsigned application. 
+          Click "More info" → "Run anyway" to proceed.
+          
+          **Source Code:** https://github.com/ayazmur/color_redact
+          **Build Date:** ${{ github.event.head_commit.timestamp }}
+          **Commit:** ${{ github.sha }}
+        draft: false
+        prerelease: false
