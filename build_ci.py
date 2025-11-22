@@ -4,7 +4,7 @@ import sys
 
 
 def main():
-    print("Building RedShapeEditor...")
+    print("Building RedShapeEditor Release...")
 
     # Команда PyInstaller
     cmd = [
@@ -34,21 +34,31 @@ def main():
 
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        print("Build successful!")
+        print("✅ Build successful!")
 
-        # Check if EXE was created
+        # Проверяем созданный файл
         exe_path = "dist/RedShapeEditor.exe"
         if os.path.exists(exe_path):
             size = os.path.getsize(exe_path) / (1024 * 1024)
-            print(f"EXE created: {exe_path}")
-            print(f"Size: {size:.1f} MB")
+            print(f"✅ EXE created: {exe_path}")
+            print(f"✅ Size: {size:.1f} MB")
+
+            # Оптимизация UPX
+            try:
+                print("Optimizing with UPX...")
+                subprocess.run(['upx', '--best', '--lzma', exe_path], check=True)
+                optimized_size = os.path.getsize(exe_path) / (1024 * 1024)
+                print(f"✅ Optimized size: {optimized_size:.1f} MB")
+            except Exception as e:
+                print(f"ℹ️ UPX not available: {e}")
+
         else:
-            print("EXE file not found!")
+            print("❌ EXE file not found!")
             sys.exit(1)
 
     except subprocess.CalledProcessError as e:
-        print("Build failed!")
-        print("Error:", e.stderr)
+        print("❌ Build failed!")
+        print("Error output:", e.stderr)
         sys.exit(1)
 
 
